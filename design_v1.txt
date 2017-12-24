@@ -1,0 +1,535 @@
+Part C Design
+
+
+This will be a list library with a series of manipulation.
+
+
+————————————————— set nodes ———————————————————
+(Data type) node:
+	item
+	back_node //a pointer to the back_node
+	next_node //a pointer to the next_node
+node end
+
+————————————————— set lists ———————————————————
+
+(Data type) list:
+	node_first //a pointer links to the first node
+	node_last // a pointer links to the last node
+	count //the number of items in list
+	current //a pointer links to the current node
+list end
+
+
+————————— prepare ——————————
+set int MAX_NODES
+set int MAX_LISTS
+//Users can only create lists as most as MAX_LISTS, and the number of nodes a list can have is as most as MAX_NODES.
+
+extern int currentList;  /* record how many lists in the lists[] */
+extern int currentNode_Available; /* recor how many nodes in the nodes pool */
+extern int totalNode; /* record total nodes */
+extern int totalList; /* record total lists */
+
+NODE  *allNodes;
+List  *allLists;
+NODE  *nodeFree;
+
+
+
+————————— functions for lists[array] ——————————
+
+LIST *ListCreate():
+makes a new, empty list, and returns its reference on success.
+Returns a NULL pointer on failure.
+
+  /*declare a list*/
+  /*determine whether the list pool and node pool are set*/
+  if(allLists == NULL){
+    /* if not, set them
+     first, malloc memories for them
+     we use memories here for expand or shrink space for later use. 
+     we need MIN_LISTS lists at first,
+     and MIN_NODES+1 nodes in all nodes.
+     the more 1 is for nodeFree/linkFree(in the 0 index), which is for link the all available nodes pool */
+    allLists = malloc(sizeof(List) * MIN_LISTS+1);
+    allNodes = malloc(sizeof(NODE) * (MIN_NODES+1));
+    
+    /*link the link pool*/
+    allLists[0].next_list = &allLists[1];
+    for (int i = 1; i <= MIN_LISTS; i++) {
+      allLists[i].next_list = &allLists[i + 1];
+    }
+
+    
+    /* nodeFree, is the linker node for the whole node pool, therefore it links to  allNodes[0] */
+    nodeFree = &allNodes[0];
+    /*link the nodeFree to the first available node
+     (all nodes recently malloc are available because they are not used yet)*/
+    nodeFree->next_node = &allNodes[1];
+    /*link all nodes in the pool*/
+    for (int i = 1; i <= MIN_NODES; i++) {
+      allNodes[i].next_node = &allNodes[i + 1];
+    }
+  }
+  
+   /*IF: there is some list available.*/
+    /*pop a list from the list pool*/
+    newList = allLists[0].next_list;
+    allLists[0].next_list = newList->next_list;
+    newList->next_list = NULL;
+   /*ELSE: there is NO list available.*/
+    /* create a list pool, whose size = current list pool, and then link them
+     (this is double the size)*/
+    struct List *doubleList = malloc(sizeof(List) * totalList);
+    /* link all new null list positions */
+    allLists[0].next_list = &doubleList[0];
+    for (int i = 0; i < totalList; i++) {
+      doubleList[i].next_list = &doubleList[i+1];
+    END IF
+
+    /*pop a list from the list pool*/
+    newList = allLists[0].next_list;
+    allLists[0].next_list = newList->next_list;
+    newList->next_list = NULL;
+ 
+  currentList++;/* state we used one more list now */
+  newList->count = 0;
+  return newList;
+
+
+
+int ListCount(list):
+	//returns the number of items in list.
+	// if the list is empty or null, return -1
+	if list == null
+		return -1
+	return list.count
+
+void *ListFirst(list):
+	// returns a pointer to the first item in list and makes the first item the current item.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count = 0
+		return a null pointer
+	return list.node_first
+
+void *ListLast(list):
+	// returns a pointer to the last item in list and makes the last item the current one.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count = 0
+		return a null pointer
+	return list.node_last
+
+void *ListNext(list):
+	// advances list's current item by one, and returns a pointer to the new current item. 
+	//If this operation attempts to advances the current item beyond the end of the list, a NULL pointer is returned.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0 or list.count ==  MAX_NODES
+		return a null pointer
+	list.current = list.current.next_node
+	return list.current
+
+void *ListPrev(list):
+	// backs up list's current item by one, and returns a pointer to the new current item. 
+	// If this operation attempts to back up the current item beyond the start of the list, a NULL pointer is returned.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0 or list.count == 1
+		return a null pointer
+	list.current = list.current.back_node
+	return pointer to list.current
+
+void *ListCurr(list):
+	// returns a pointer to the current item in list.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0
+		return a null pointer
+	return pointer to list.current
+
+
+int ListAdd(list, item):
+adds the new item to list directly after the current item, and makes item the current item. 
+If the current pointer is at the end of the list, the item is added at the end. Returns 0 on success, -1 on failure.
+
+  /*determine whether the argument is invalid*/
+  if(list == NULL || list->current == NULL || item == NULL ){
+    return -1;
+  }
+  
+  /*if current == last, then the situation = listAppend*/
+  if(list->current == list->node_last){
+    return ListAppend(list, item);
+  }
+  
+  nodeFree = &allNodes[0];
+  
+  /*if there is no node available anymore*/
+  if(currentNode_Available == 0){
+    /* malloc a node pool, whose size = old pool's size */
+    currentNode_Available = totalNode;
+    NODE *expandNodesPool = malloc(sizeof(NODE) * (totalNode));
+    /* double the total size count*/
+    totalNode *= 2;
+    
+    /* link the nodes pool */
+    nodeFree->next_node = &expandNodesPool[0];
+    for (int w=0; w < currentNode_Available; w++) {
+      expandNodesPool[w].next_node = &allNodes[w + 1];
+    }
+  }
+  
+  
+  /* GET A NODE FROM NODEFREE */
+  NODE *addOne = nodeFree->next_node;
+  
+  /* pop the node from nodeFree */
+  nodeFree->next_node = addOne->next_node;
+  currentNode_Available --;
+  
+  /* add addOne */
+  addOne->item = item;
+  addOne->next_node = list->current->next_node;
+  addOne->back_node = list->current;
+  
+  if(addOne->next_node != NULL) addOne->next_node->back_node = addOne;
+  if(addOne->back_node != NULL) addOne->back_node->next_node = addOne;
+  
+  list->current = addOne;
+  list->count ++;
+  
+  return 0;
+
+
+
+		
+
+int ListInsert(list, item):
+adds item to list directly before the current item, and makes the new items the current one. 
+If the current pointer is at the start of the list, the item is added at the start.  
+Returns 0 on success, -1 on failure.
+
+
+  /*determine whether the argument is invalid*/
+  if(list == NULL || item == NULL || list->current == NULL ){
+    return -1;
+  }
+  
+  /*if current == first, then the situation = listAppend*/
+  if(list->current == list->node_first){
+    return ListPrepend(list,item);
+  }
+  
+  nodeFree = &allNodes[0];
+  
+  /*if there is no node available anymore*/
+  if(currentNode_Available == 0){
+    /* malloc a node pool, whose size = old pool's size */
+    currentNode_Available = totalNode;
+    NODE *expandNodesPool = malloc(sizeof(NODE) * (totalNode));
+    /* double the total size count*/
+    totalNode *= 2;
+    
+    /* link the nodes pool */
+    nodeFree->next_node = &expandNodesPool[0];
+    for (int w=0; w < currentNode_Available; w++) {
+      expandNodesPool[w].next_node = &allNodes[w + 1];
+    }
+  }
+  
+  
+  /* GET A NODE FROM NODEFREE */
+  NODE *addOne = nodeFree->next_node;
+  
+  /* pop the node from nodeFree */
+  nodeFree->next_node = addOne->next_node;
+  currentNode_Available --;
+  
+  /* add addOne */
+  addOne->item = item;
+  addOne->back_node = list->current->back_node;
+  addOne->next_node = list->current;
+  
+  if(addOne->next_node != NULL) addOne->next_node->back_node = addOne;
+  if(addOne->back_node != NULL) addOne->back_node->next_node = addOne;
+  
+  list->current = addOne;
+  list->count ++;
+  
+  
+  
+  return 0;
+
+	
+
+int ListAppend(list, item): 
+adds item to the end of list, and makes the new item the current one.
+Returns 0 on success, -1 on failure.
+
+/*determine whether the argument is invalid*/
+  if(list == NULL || item == NULL){
+    return -1;
+  }
+  /*if there is no node available anymore*/
+  if(currentNode_Available == 0){
+    /* malloc a node pool, whose size = old pool's size */
+    currentNode_Available = totalNode;
+    NODE *expandNodesPool = malloc(sizeof(NODE) * (totalNode));
+    /* double the total size count*/
+    totalNode *= 2;
+    
+    /* link the nodes pool */
+    nodeFree->next_node = &expandNodesPool[0];
+    for (int w=0; w < currentNode_Available; w++) {
+      expandNodesPool[w].next_node = &allNodes[w + 1];
+    }
+  }
+  
+  /* GET A NODE FROM NODEFREE */
+  nodeFree = &allNodes[0];
+  NODE *addOne = nodeFree->next_node;
+  
+  
+  /* pop the node from nodeFree */
+  nodeFree->next_node = addOne->next_node;
+  currentNode_Available --;
+  
+  
+  /* add addOne */
+  addOne->item = item;
+  addOne->next_node = NULL;
+  addOne->back_node = list->node_last;
+  
+  
+  if(list->count == 0){
+    list->node_first = addOne;
+  }else{
+    list->node_last->next_node = addOne;
+  }
+  
+  
+  list->node_last = addOne;
+  list->current = addOne;
+  list->count ++;
+  
+  return 0;
+
+
+	
+
+int ListPrepend(list, item):
+adds item to the front of list, and makes the new item the current one. Returns 0 on success, -1 on failure.
+Returns 0 on success, -1 on failure.
+if the list is null or full, or no nodes here can be used, return -1
+	/*determine whether the argument is invalid*/
+  if(list == NULL || item == NULL){
+    return -1;
+  }
+  /*if there is no node available anymore*/
+  if(currentNode_Available == 0){
+    /* malloc a node pool, whose size = old pool's size */
+    currentNode_Available = totalNode;
+    NODE *expandNodesPool = malloc(sizeof(NODE) * (totalNode));
+    /* double the total size count*/
+    totalNode *= 2;
+    
+    /* link the nodes pool */
+    nodeFree->next_node = &expandNodesPool[0];
+    for (int w=0; w < currentNode_Available; w++) {
+      expandNodesPool[w].next_node = &allNodes[w + 1];
+    }
+  }
+  
+  /* GET A NODE FROM NODEFREE */
+  nodeFree = &allNodes[0];
+  NODE *addOne = nodeFree->next_node;
+  
+  /* pop the node from nodeFree */
+  nodeFree->next_node = addOne->next_node;
+  currentNode_Available --;
+  
+  
+  /* add addOne */
+  addOne->item = item;
+  addOne->next_node = list->node_first;
+  addOne->back_node = NULL;
+  
+  
+  if(list->count == 0){
+    list->node_last = addOne;
+  }else{
+    list->node_first->back_node = addOne;
+  }
+  
+  
+  list->node_first = addOne;
+  list->current = addOne;
+  list->count ++;
+  return 0;
+
+
+
+
+void *ListRemove(list):
+	// Return current item and take it out of list. Make the next item the current one.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0
+		return a null pointer
+
+	remove = list.current
+
+	remove.back_node.next_node = remove.next_node //remove’s back’s next = remove’s next
+	remove.next_node.back_node = remove.back_node //remove’s next’s back = remove’s back
+
+	list.count —-
+	
+	link the node to nodeFree
+	nodeUsed —- 
+	
+
+	return remove
+
+
+void ListConcat(list1, list2):
+ ListConcat(list1, list2)
+ adds list2 to the end of list1.
+ The current pointer is set to the current pointer of list1. List2 no
+ longer exists after the operation.
+
+/*determine whether the argument is invalid
+   if list1 is null, we won't do anything for it
+   if list2 is null, we don't need to do anything.
+   therefore,
+   for these two situations, we directly return. */
+  if(list1 == NULL || list2 == NULL){
+    return;
+  }
+  /* link list1 and list2 */
+  if(list1->count != 0){
+    list1->node_last->next_node = list2->node_first;
+    list2->node_first->back_node = list1->node_last;
+  }else{
+    list1->node_first = list2->node_first;
+  }
+  
+  /*set list1's last = list2's last*/
+  list1->node_last = list2->node_last;
+  list1->count += list2->count;
+  
+  /*set list2 unused and push it to the list pool*/
+  list2->count = 0;
+  list2->node_first = NULL;
+  list2->node_last = NULL;
+  list2->current = NULL;
+  list2->next_list = allLists[0].next_list;
+  allLists[0].next_list = list2;
+  currentList --;
+  
+  return;
+
+
+
+void ListFree(list, itemFree):
+	// delete list. 
+	// itemFree is a pointer to a routine that frees an item. 
+	// It should be invoked (within ListFree) as: (*itemFree)(itemToBeFreed);
+
+	for every node in the list:
+		(*itemFree)(node.item)
+		ListRemove()
+	
+	currentList —- 
+
+	return
+
+
+void *ListTrim(list):
+	// Return last item and take it out of list. The current pointer shall be the new last item in the list.
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0
+		return a null pointer
+	
+	remove = list.node_last
+
+	if list.count == 1
+		list.node_first = null
+		list.node_last = null
+		list.count = 0
+		list.current = null
+	else
+		list->node_last->back_node->next_node = null
+		list.node_last = list.node_last.back_node
+		if list.current = remove
+			list.current = list.node_last
+	return remove
+		
+		
+
+void *ListSearch(list, comparator, comparisonArg):
+	// searches list starting at the current item until the end is reached or a match is found. 
+	// In this context, a match is determined by the comparator parameter. 
+	// This parameter is a pointer to a routine that takes as its first argument an item pointer, 
+	// and as its second argument comparisonArg. 
+	// Comparator returns 0 if the item and comparisonArg don't match (i.e. didn't find it), 
+	// or 1 if they do (i.e. found it). Exactly what constitutes a match is up to the implementor of comparator. 
+	// If a match is found, the current pointer is left at the matched item and the pointer to that item is returned. 
+	// If no match is found, the current pointer is left at the end of the list and a NULL pointer is returned.	
+	
+	// if the list is empty or null, return a null pointer
+	if list == null or list.count == 0
+		return a null pointer
+	
+	list.current = list.node_first
+
+	for every nodes in lists:
+		determine = comparator(list.current.item, comparisonArg)
+		if(determine == 1):
+			return list.current
+		else:
+			if(list.current == list.last_node):
+				return a null pointer
+
+			list.current = list.current.next_node
+
+****************
+implement in list_other.c
+****************
+
+void printList(List *list)
+print the list out
+
+void clear();
+clear everything(list pool + node pool)
+to an empty mode.
+after this, list pool = null; node pool = node.
+
+int AllList()
+return list pool’s size
+
+int Allnodes()
+return node pool’s size
+
+int UsedNode()
+return how many nodes are used
+
+int UsedList()
+return how many lists are used
+
+
+int increasingNPRea()
+increasing node pool’s size
+
+void decreaseingNPRea()
+decreasing node pool’s size
+
+void increaseingLPRea()
+increasing list pool’s size
+
+void decreaseingLPRea()
+decreasing list pool’s size
+
+
+NODE* getNode()
+for adders to get nodes from the node pool
+
+void createNP()
+create a node pool, when node pool = null
+	

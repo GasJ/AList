@@ -1,0 +1,180 @@
+/*
+# Tong Wang tow087 11201222
+# Baoyi Cheng bac848 11200933
+*/
+
+all tests will put in mytestlist.c and you should run mytestlist after make makefile
+
+
+we have six parts of test for partC.
+
+1.
+void parameterTest();
+WE TEST THE ABILITY OF THE LIST FUNCTIONS TO DETERMINE INVALID PARAMETER.
+This is the first test, and we do not know whether functions can work alright. We just put null pointer into a function, and if it does not crash and return right value, the test is passed.
+
+2.
+void adderTest();
+WE TEST ALL ADDERS FUNCTION HERE BUT *WITHOUT* MEMORY BONUS PART, WHICH WILL BE TESTED INDIVIDUALLY LATER.
+
+A. test ListCreate()
+create testList, and testList2.
+- they should not be null.
+- they should not be same.
+- their fields should be null or 0.
+test passed.
+
+B. test ListAdd()  ListInsert()  ListAppend() ListPrepend()
+ListConcat()
+
+Add, concat, and Insert cannot use when the current is null.
+we first test whether they can have right feedback(-1).
+
+and then use different int and different function to correctly adding nodes into the testList. we said, n nodes.
+- count should be right(n)
+- the order should be right(by print the list)
+
+add repeat items by a loop to another list with (MIN_NODE-n) nodes.
+- count should be right
+- should not crash
+- the order should be right(by print the list)
+
+concat them
+- count should be right
+- should not crash
+- the order should be right(by print the list)
+
+if we can print it correctly, it proved that the part of fields after adding does not have problems.
+
+3.
+void moverTest();
+WE TEST ALL MOVERS FUNCTION HERE.
+at this step, we proved adders can be used correctly.
+we just create a list, test an empty list.
+- ListSearch test
+create a compare function.
+then add some pointer.
+determine whether it can return right value.
+then add many pointer.
+determine whether it can return right value.
+
+for search function we will search
+- list is empty
+- a null item
+- a non-null item in the list
+- an item not in the list
+- first item
+- last item
+- current item
+
+
+
+4.
+void removerTest();
+WE TEST ALL REMOVERS FUNCTION HERE BUT *WITHOUT* MEMORY BONUS PART, WHICH WILL BE TESTED INDIVIDUALLY LATER.
+at this step, we proved adders and movers both can be used correctly.
+we just create a list, test a empty list.
+then add some pointer.
+delete them all.
+add some pointer.
+delete some of them.
+
+
+for listFree
+- currentList should +1
+- pointer should not be null (we will not free a list or node individually due to the bonus part)
+- next_list should not be null(prove that it in the list pool now)
+
+
+5.
+void BonusTest();
+WE TEST MEMORY BONUS PART HERE, FOR MEMORY INCREASE, SHRINK.
+at this step, we believe that basic functions can be used now.
+ONLY TEST THE ABILITY TO INCREASE AND SHRINK MEMORY
+
+- INCREASING
+NODE POOL PART
+###
+one list
+add an integer (to prove the memory does not lost later)
+add a lot of integer with a loop (still smaller than min_node)
+add another unique integer
+print
+add a little more nodes to make node pool double first time
+print
+add twice double
+print
+
+deleteList
+
+###
+two list
+list1 - add 20 nodes with several unique items
+list2 - add 20 nodes with several unique items
+print both, they should both be right
+list1 - add (min_node) nodes 
+print both, they should both be right
+list2 - add (2 * total_nodes) nodes 
+print both, they should both be right
+
+—define right
+- the order should be right(by print the list) without any crash
+
+
+### node increasing pass
+
+
+### LIST POOL PART
+create other 10 lists
+add several nodes in them
+print
+print both, they should both be right
+
+
+
+- DECREASING
+### LIST POOL PART
+free 2 of the lists.
+total_list should be OLD_total_list/2 (10)
+print all others 
+- the print result should be same as the result before deletion.
+
+### NODE POOL PART
+free several lists (will release nodes to node pool)
+then the node pool should shrink
+test available nodes
+test total nodes
+print all remain lists
+- the print result should be same as the result before deletion.
+test passed.
+
+
+
+
+
+6.
+void otherFunc();
+WE TEST OTHER FUNCTIONS WE THINK WE COULD ADDIN HERE.
+ACTURALLY, WE MAY USE THESE FUNCTIONS, SO WE TESTED BEFORE.
+
+- clear()      clear everything(list pool + node pool)
+- printList()  print a list
+- totalList()  return how many lists are created
+- increasingNP() 
+- decreasingNP()
+	write this part as a function, then we do not need to write it into every relative function.
+
+
+
+printList()  - print a list right, without crash
+
+allList()  return how many lists are created
+- create lists and see the return value
+
+
+increasingNP()
+decreasingNP()
+- repeat step 5 after writing this function
+
+clear()
+- all_nodes and all_lists should both be NULL.
